@@ -900,6 +900,7 @@ def update_explorer_table(country, item, element):
     ])
 
 if __name__ == '__main__':
-    print("Starting dashboard server...")
-    print("Open your browser and navigate to: http://127.0.0.1:8050")
-    app.run(debug=True, host='0.0.0.0', port=8050)
+    import os
+    port = int(os.environ.get("PORT", 8050))  # use Render's dynamic port
+    print(f"Starting dashboard server on port {port} ...")
+    app.run_server(host='0.0.0.0', port=port, debug=False)
