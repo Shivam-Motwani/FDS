@@ -883,7 +883,7 @@ def update_explorer_table(country, item, element):
     if filtered_df.empty:
         return html.P("No data available for the selected filters.", className="text-muted")
     
-    # Create table
+    # Create table without dark parameter (use className instead)
     table = dbc.Table.from_dataframe(
         filtered_df,
         striped=True,
@@ -891,7 +891,7 @@ def update_explorer_table(country, item, element):
         hover=True,
         responsive=True,
         size='sm',
-        dark=True
+        className='table-dark'
     )
     
     return html.Div([
