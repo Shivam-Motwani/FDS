@@ -21,18 +21,111 @@ app = dash.Dash(
     title="Asia Agriculture Dashboard"
 )
 
+# Custom CSS for dark theme dropdowns
+app.index_string = '''
+<!DOCTYPE html>
+<html>
+    <head>
+        {%metas%}
+        <title>{%title%}</title>
+        {%favicon%}
+        {%css%}
+        <style>
+            .Select-control {
+                background-color: #2c3e50 !important;
+                border-color: #34495e !important;
+                color: #ecf0f1 !important;
+            }
+            .Select-menu-outer {
+                background-color: #2c3e50 !important;
+                border-color: #34495e !important;
+            }
+            .Select-option {
+                background-color: #2c3e50 !important;
+                color: #ecf0f1 !important;
+            }
+            .Select-option.is-focused {
+                background-color: #34495e !important;
+            }
+            .Select-option.is-selected {
+                background-color: #1abc9c !important;
+            }
+            .Select-value-label {
+                color: #ecf0f1 !important;
+            }
+            .Select-placeholder {
+                color: #95a5a6 !important;
+            }
+            .Select-input > input {
+                color: #ecf0f1 !important;
+            }
+            /* Dropdown styling */
+            .css-1wa3eu0-placeholder {
+                color: #95a5a6 !important;
+            }
+            .css-26l3qy-menu {
+                background-color: #2c3e50 !important;
+            }
+            .css-1n7v3ny-option {
+                background-color: #2c3e50 !important;
+                color: #ecf0f1 !important;
+            }
+            .css-1n7v3ny-option:hover {
+                background-color: #34495e !important;
+            }
+            /* React-select v2+ styling */
+            div[class*="control"] {
+                background-color: #2c3e50 !important;
+                border-color: #34495e !important;
+            }
+            div[class*="menu"] {
+                background-color: #2c3e50 !important;
+            }
+            div[class*="option"] {
+                background-color: #2c3e50 !important;
+                color: #ecf0f1 !important;
+            }
+            div[class*="option"]:hover {
+                background-color: #34495e !important;
+            }
+            div[class*="singleValue"] {
+                color: #ecf0f1 !important;
+            }
+            div[class*="multiValue"] {
+                background-color: #34495e !important;
+            }
+            div[class*="multiValueLabel"] {
+                color: #ecf0f1 !important;
+            }
+            input[class*="input"] {
+                color: #ecf0f1 !important;
+            }
+        </style>
+    </head>
+    <body>
+        {%app_entry%}
+        <footer>
+            {%config%}
+            {%scripts%}
+            {%renderer%}
+        </footer>
+    </body>
+</html>
+'''
+
 # Load data
 DATA_DIR = Path(__file__).parent
 
 def load_data():
     """Load and prepare the dataset"""
-    # Load main data (NOFLAG version for cleaner data)
-    df = pd.read_csv(DATA_DIR / 'Production_Crops_Livestock_E_Asia_NOFLAG.csv')
+    # Load main data from normalized folder
+    df = pd.read_csv(DATA_DIR / 'Production_Crops_Livestock_E_All_Data_(Normalized)' / 'Production_Crops_Livestock_E_All_Data_(Normalized).csv', 
+                     encoding='latin1', low_memory=False)
     
-    # Load lookup tables
-    areas = pd.read_csv(DATA_DIR / 'Production_Crops_Livestock_E_AreaCodes.csv')
-    items = pd.read_csv(DATA_DIR / 'Production_Crops_Livestock_E_ItemCodes.csv')
-    elements = pd.read_csv(DATA_DIR / 'Production_Crops_Livestock_E_Elements.csv')
+    # Load lookup tables from normalized folder
+    areas = pd.read_csv(DATA_DIR / 'Production_Crops_Livestock_E_All_Data_(Normalized)' / 'Production_Crops_Livestock_E_AreaCodes.csv')
+    items = pd.read_csv(DATA_DIR / 'Production_Crops_Livestock_E_All_Data_(Normalized)' / 'Production_Crops_Livestock_E_ItemCodes.csv')
+    elements = pd.read_csv(DATA_DIR / 'Production_Crops_Livestock_E_All_Data_(Normalized)' / 'Production_Crops_Livestock_E_Elements.csv')
     
     # Clean column names
     areas.columns = areas.columns.str.strip()
@@ -45,9 +138,8 @@ def load_data():
 print("Loading data...")
 df_main, df_areas, df_items, df_elements = load_data()
 
-# Get year columns
-year_cols = [col for col in df_main.columns if col.startswith('Y')]
-years = [int(col[1:]) for col in year_cols]
+# Get years from the Year column in normalized format
+years = sorted(df_main['Year'].unique())
 
 # App Layout
 app.layout = dbc.Container([
@@ -55,10 +147,10 @@ app.layout = dbc.Container([
         dbc.Col([
             html.H1([
                 html.I(className="fas fa-chart-line me-3"),
-                "Asia Agriculture Production Dashboard"
+                "Global Agriculture Production Dashboard"
             ], className="text-center my-4 text-info"),
             html.P(
-                "Comprehensive analysis of crops and livestock production across Asian countries (1961-2023)",
+                "Comprehensive analysis of crops and livestock production worldwide (1961-2023)",
                 className="text-center text-muted mb-4"
             )
         ])
@@ -100,50 +192,23 @@ def render_overview():
     total_items = df_main['Item'].nunique()
     year_range = f"{min(years)} - {max(years)}"
     
-    # Get production data for latest year
-    latest_year = f'Y{max(years)}'
-    production_data = df_main[df_main['Element'] == 'Production'].copy()
+    # Get production data for latest year from normalized format
+    latest_year = max(years)
+    production_data = df_main[
+        (df_main['Element'] == 'Production') & 
+        (df_main['Year'] == latest_year)
+    ].copy()
     
     # Top 5 countries by total production
-    country_totals = {}
-    for country in production_data['Area'].unique():
-        country_data = production_data[production_data['Area'] == country]
-        total = country_data[latest_year].sum()
-        if not pd.isna(total) and total > 0:
-            country_totals[country] = total
-    
-    top_countries = sorted(country_totals.items(), key=lambda x: x[1], reverse=True)[:5]
+    country_totals = production_data.groupby('Area')['Value'].sum().sort_values(ascending=False).head(5)
+    top_countries = list(country_totals.items())
     
     # Top 5 items by production
-    item_totals = {}
-    for item in production_data['Item'].unique():
-        item_data = production_data[production_data['Item'] == item]
-        total = item_data[latest_year].sum()
-        if not pd.isna(total) and total > 0:
-            item_totals[item] = total
-    
-    top_items = sorted(item_totals.items(), key=lambda x: x[1], reverse=True)[:5]
+    item_totals = production_data.groupby('Item')['Value'].sum().sort_values(ascending=False).head(5)
+    top_items = list(item_totals.items())
     
     # Create visualizations
-    # 1. Top countries bar chart
-    fig_countries = go.Figure(data=[
-        go.Bar(
-            x=[c[0] for c in top_countries],
-            y=[c[1] for c in top_countries],
-            marker_color='#1f77b4',
-            text=[f'{c[1]:,.0f}' for c in top_countries],
-            textposition='outside'
-        )
-    ])
-    fig_countries.update_layout(
-        title=f'Top 5 Producing Countries ({max(years)})',
-        xaxis_title='Country',
-        yaxis_title='Total Production',
-        height=400,
-        template='plotly_dark'
-    )
-    
-    # 2. Top items bar chart
+    # 1. Top items bar chart
     fig_items = go.Figure(data=[
         go.Bar(
             x=[i[0][:30] for i in top_items],  # Truncate long names
@@ -161,7 +226,7 @@ def render_overview():
         template='plotly_dark'
     )
     
-    # 3. Production elements distribution
+    # 2. Production elements distribution
     element_counts = df_main.groupby('Element').size()
     fig_elements = go.Figure(data=[
         go.Pie(
@@ -216,17 +281,10 @@ def render_overview():
             dbc.Col([
                 dbc.Card([
                     dbc.CardBody([
-                        dcc.Graph(figure=fig_countries)
-                    ])
-                ], className="shadow-sm bg-dark")
-            ], width=6),
-            dbc.Col([
-                dbc.Card([
-                    dbc.CardBody([
                         dcc.Graph(figure=fig_items)
                     ])
                 ], className="shadow-sm bg-dark")
-            ], width=6),
+            ], width=12),
         ], className="mb-4"),
         
         dbc.Row([
@@ -301,20 +359,24 @@ def update_trend_chart(country, item, element):
     ]
     
     if filtered_df.empty:
-        return go.Figure().add_annotation(
+        fig = go.Figure()
+        fig.add_annotation(
             text="No data available for this selection",
             xref="paper", yref="paper",
-            x=0.5, y=0.5, showarrow=False
+            x=0.5, y=0.5, showarrow=False,
+            font=dict(size=16, color="#95a5a6")
         )
+        fig.update_layout(
+            template='plotly_dark',
+            paper_bgcolor='#222222',
+            plot_bgcolor='#222222'
+        )
+        return fig
     
-    # Extract year data
-    values = []
-    year_labels = []
-    for year_col in year_cols:
-        val = filtered_df[year_col].values[0]
-        if not pd.isna(val) and val > 0:
-            values.append(val)
-            year_labels.append(int(year_col[1:]))
+    # Sort by year and get year/value data from normalized format
+    filtered_df = filtered_df.sort_values('Year')
+    year_labels = filtered_df['Year'].tolist()
+    values = filtered_df['Value'].tolist()
     
     fig = go.Figure()
     fig.add_trace(go.Scatter(
@@ -398,34 +460,51 @@ def render_comparison():
 def update_comparison_chart(item, countries_list, year):
     """Update comparison chart"""
     if not countries_list:
-        return go.Figure().add_annotation(
+        fig = go.Figure()
+        fig.add_annotation(
             text="Please select at least one country",
             xref="paper", yref="paper",
-            x=0.5, y=0.5, showarrow=False
+            x=0.5, y=0.5, showarrow=False,
+            font=dict(size=16, color="#95a5a6")
         )
+        fig.update_layout(
+            template='plotly_dark',
+            paper_bgcolor='#222222',
+            plot_bgcolor='#222222'
+        )
+        return fig
     
-    year_col = f'Y{year}'
+    # Get production data for selected countries from normalized format
+    filtered_df = df_main[
+        (df_main['Area'].isin(countries_list)) &
+        (df_main['Item'] == item) &
+        (df_main['Element'] == 'Production') &
+        (df_main['Year'] == year)
+    ]
     
-    # Get production data for selected countries
     comparison_data = []
-    for country in countries_list:
-        filtered_df = df_main[
-            (df_main['Area'] == country) &
-            (df_main['Item'] == item) &
-            (df_main['Element'] == 'Production')
-        ]
-        
-        if not filtered_df.empty and year_col in filtered_df.columns:
-            val = filtered_df[year_col].values[0]
-            if not pd.isna(val):
-                comparison_data.append({'Country': country, 'Production': val})
+    if not filtered_df.empty:
+        for country in countries_list:
+            country_data = filtered_df[filtered_df['Area'] == country]
+            if not country_data.empty:
+                val = country_data['Value'].values[0]
+                if not pd.isna(val):
+                    comparison_data.append({'Country': country, 'Production': val})
     
     if not comparison_data:
-        return go.Figure().add_annotation(
+        fig = go.Figure()
+        fig.add_annotation(
             text="No data available for this selection",
             xref="paper", yref="paper",
-            x=0.5, y=0.5, showarrow=False
+            x=0.5, y=0.5, showarrow=False,
+            font=dict(size=16, color="#95a5a6")
         )
+        fig.update_layout(
+            template='plotly_dark',
+            paper_bgcolor='#222222',
+            plot_bgcolor='#222222'
+        )
+        return fig
     
     df_compare = pd.DataFrame(comparison_data)
     df_compare = df_compare.sort_values('Production', ascending=True)
@@ -509,25 +588,33 @@ def render_top_producers():
 )
 def update_top_producers(item, n):
     """Update top producers visualization"""
-    latest_year = f'Y{max(years)}'
+    latest_year = max(years)
     
     filtered_df = df_main[
         (df_main['Item'] == item) &
-        (df_main['Element'] == 'Production')
+        (df_main['Element'] == 'Production') &
+        (df_main['Year'] == latest_year)
     ]
     
     if filtered_df.empty:
-        fig = go.Figure().add_annotation(
+        fig = go.Figure()
+        fig.add_annotation(
             text="No data available",
             xref="paper", yref="paper",
-            x=0.5, y=0.5, showarrow=False
+            x=0.5, y=0.5, showarrow=False,
+            font=dict(size=16, color="#95a5a6")
+        )
+        fig.update_layout(
+            template='plotly_dark',
+            paper_bgcolor='#222222',
+            plot_bgcolor='#222222'
         )
         return fig, "No data available"
     
-    # Get production values for latest year
+    # Get production values for latest year from normalized format
     country_production = []
     for _, row in filtered_df.iterrows():
-        val = row[latest_year]
+        val = row['Value']
         if not pd.isna(val) and val > 0:
             country_production.append({
                 'Country': row['Area'],
@@ -535,10 +622,17 @@ def update_top_producers(item, n):
             })
     
     if not country_production:
-        fig = go.Figure().add_annotation(
+        fig = go.Figure()
+        fig.add_annotation(
             text="No data available",
             xref="paper", yref="paper",
-            x=0.5, y=0.5, showarrow=False
+            x=0.5, y=0.5, showarrow=False,
+            font=dict(size=16, color="#95a5a6")
+        )
+        fig.update_layout(
+            template='plotly_dark',
+            paper_bgcolor='#222222',
+            plot_bgcolor='#222222'
         )
         return fig, "No data available"
     
@@ -631,23 +725,31 @@ def render_geographic():
 )
 def update_geographic_chart(item, year):
     """Update geographic chart"""
-    year_col = f'Y{year}'
-    
     filtered_df = df_main[
         (df_main['Item'] == item) &
-        (df_main['Element'] == 'Production')
+        (df_main['Element'] == 'Production') &
+        (df_main['Year'] == year)
     ]
     
     if filtered_df.empty:
-        return go.Figure().add_annotation(
+        fig = go.Figure()
+        fig.add_annotation(
             text="No data available",
             xref="paper", yref="paper",
-            x=0.5, y=0.5, showarrow=False
+            x=0.5, y=0.5, showarrow=False,
+            font=dict(size=16, color="#95a5a6")
         )
+        fig.update_layout(
+            template='plotly_dark',
+            paper_bgcolor='#222222',
+            plot_bgcolor='#222222'
+        )
+        return fig
     
+    # Get data from normalized format
     geo_data = []
     for _, row in filtered_df.iterrows():
-        val = row[year_col]
+        val = row['Value']
         if not pd.isna(val) and val > 0:
             geo_data.append({
                 'Country': row['Area'],
@@ -655,11 +757,19 @@ def update_geographic_chart(item, year):
             })
     
     if not geo_data:
-        return go.Figure().add_annotation(
+        fig = go.Figure()
+        fig.add_annotation(
             text="No data available",
             xref="paper", yref="paper",
-            x=0.5, y=0.5, showarrow=False
+            x=0.5, y=0.5, showarrow=False,
+            font=dict(size=16, color="#95a5a6")
         )
+        fig.update_layout(
+            template='plotly_dark',
+            paper_bgcolor='#222222',
+            plot_bgcolor='#222222'
+        )
+        return fig
     
     df_geo = pd.DataFrame(geo_data)
     df_geo = df_geo.sort_values('Production', ascending=False)
@@ -756,8 +866,10 @@ def update_explorer_table(country, item, element):
     # Limit to 100 rows for performance
     filtered_df = filtered_df.head(100)
     
-    # Select key columns to display
-    display_cols = ['Area', 'Item', 'Element', 'Unit'] + year_cols[-10:]  # Last 10 years
+    # Select key columns to display for normalized format
+    display_cols = ['Area', 'Item', 'Element', 'Year', 'Value', 'Unit', 'Flag']
+    # Only select columns that exist
+    display_cols = [col for col in display_cols if col in filtered_df.columns]
     filtered_df = filtered_df[display_cols]
     
     if filtered_df.empty:

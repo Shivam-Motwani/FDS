@@ -1,4 +1,4 @@
-# 🌾 Asia Agriculture Production Dashboard
+#  Asia Agriculture Production Dashboard
 
 A comprehensive, interactive dashboard for visualizing and analyzing agricultural production data (crops and livestock) across Asian countries from 1961 to 2023.
 
@@ -6,7 +6,7 @@ A comprehensive, interactive dashboard for visualizing and analyzing agricultura
 ![Python](https://img.shields.io/badge/Python-3.8+-blue)
 ![License](https://img.shields.io/badge/License-MIT-yellow)
 
-## 📊 Features
+##  Features
 
 ### Interactive Web Dashboard
 - ** Overview Tab**: Key metrics, top producers, and data distribution
@@ -31,7 +31,7 @@ A comprehensive, interactive dashboard for visualizing and analyzing agricultura
 - Top producer identification
 - Missing data analysis
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 - Python 3.8 or higher
@@ -74,7 +74,7 @@ This will generate PNG images in the `visualizations/` folder including:
 - Country portfolios
 - Growth comparisons
 
-## 📁 Project Structure
+##  Project Structure
 
 ```
 E:\FDS\
@@ -98,7 +98,7 @@ E:\FDS\
     └── ... (more visualizations)
 ```
 
-## 📊 Data Overview
+##  Data Overview
 
 ### Dataset Coverage
 - **Geographic Scope**: Asian countries and regions
@@ -114,7 +114,7 @@ E:\FDS\
 - **Stocks**: Livestock populations
 - **Producing Animals**: Number of animals slaughtered
 
-## 🎨 Dashboard Features Detail
+##  Dashboard Features Detail
 
 ### 1. Overview Tab
 - Total countries and products tracked
@@ -153,7 +153,7 @@ E:\FDS\
 - Display last 10 years of data
 - Responsive table design
 
-## 🔧 Customization
+##  Customization
 
 ### Modify Color Schemes
 Edit the Plotly color palettes in `dashboard.py`:
@@ -177,7 +177,7 @@ Change the Bootstrap theme in `dashboard.py`:
 external_stylesheets=[dbc.themes.DARKLY]  # Try: DARKLY, SLATE, CYBORG
 ```
 
-## 📈 Usage Examples
+##  Usage Examples
 
 ### Example 1: Analyze Rice Production Trends
 1. Open dashboard
@@ -200,7 +200,7 @@ python generate_visuals.py
 ```
 Check the `visualizations/` folder for PNG images ready for presentations.
 
-## 🛠️ Troubleshooting
+##  Troubleshooting
 
 ### Issue: Port 8050 already in use
 **Solution**: Change the port in `dashboard.py`:
@@ -217,7 +217,7 @@ pip install -r requirements.txt --upgrade
 ### Issue: Data files not found
 **Solution**: Ensure CSV files are in the same directory as Python scripts.
 
-## 📊 Academic Use Case
+##  Academic Use Case
 
 This dashboard is designed for **Phase 1** of the FDS project (11-Aug-2025):
 
@@ -239,20 +239,18 @@ This dashboard is designed for **Phase 1** of the FDS project (11-Aug-2025):
 ✓ **Novel observations**: Interactive visualization reveals production shifts and emerging producers  
 ✓ **Data techniques**: Time-series analysis, CAGR calculations, comparative analysis  
 
-## 📝 License
+##  License
 
 This project is open source and available under the MIT License.
 
-## 👥 Contributing
+## Contributing
 
 Contributions are welcome! Please feel free to submit pull requests or open issues.
 
-## 📧 Contact
+##  Contact
 
 For questions or suggestions about this dashboard, please open an issue in the project repository.
 
 ---
-
-**Built with ❤️ using Python, Plotly, and Dash**
 
 *Last Updated: November 2025*

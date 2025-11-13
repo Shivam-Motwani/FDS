@@ -21,13 +21,17 @@ class DataProcessor:
         
     def load_all_data(self) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
         """Load all CSV files"""
-        print("Loading main dataset...")
-        self.df_main = pd.read_csv(self.data_dir / 'Production_Crops_Livestock_E_Asia_NOFLAG.csv')
+        print("Loading main dataset from normalized folder...")
+        self.df_main = pd.read_csv(
+            self.data_dir / 'Production_Crops_Livestock_E_All_Data_(Normalized)' / 'Production_Crops_Livestock_E_All_Data_(Normalized).csv',
+            encoding='latin1',
+            low_memory=False
+        )
         
         print("Loading lookup tables...")
-        self.df_areas = pd.read_csv(self.data_dir / 'Production_Crops_Livestock_E_AreaCodes.csv')
-        self.df_items = pd.read_csv(self.data_dir / 'Production_Crops_Livestock_E_ItemCodes.csv')
-        self.df_elements = pd.read_csv(self.data_dir / 'Production_Crops_Livestock_E_Elements.csv')
+        self.df_areas = pd.read_csv(self.data_dir / 'Production_Crops_Livestock_E_All_Data_(Normalized)' / 'Production_Crops_Livestock_E_AreaCodes.csv')
+        self.df_items = pd.read_csv(self.data_dir / 'Production_Crops_Livestock_E_All_Data_(Normalized)' / 'Production_Crops_Livestock_E_ItemCodes.csv')
+        self.df_elements = pd.read_csv(self.data_dir / 'Production_Crops_Livestock_E_All_Data_(Normalized)' / 'Production_Crops_Livestock_E_Elements.csv')
         
         # Clean column names
         self.df_areas.columns = self.df_areas.columns.str.strip()
@@ -40,11 +44,15 @@ class DataProcessor:
         return self.df_main, self.df_areas, self.df_items, self.df_elements
     
     def get_year_columns(self) -> List[str]:
-        """Extract year columns from main dataset"""
-        return [col for col in self.df_main.columns if col.startswith('Y')]
+        """Extract year columns from main dataset - for normalized format, returns Year column"""
+        if 'Year' in self.df_main.columns:
+            return ['Year']  # Normalized format
+        return [col for col in self.df_main.columns if col.startswith('Y')]  # Wide format
     
     def get_years(self) -> List[int]:
         """Get list of years in dataset"""
+        if 'Year' in self.df_main.columns:
+            return sorted(self.df_main['Year'].unique())
         year_cols = self.get_year_columns()
         return [int(col[1:]) for col in year_cols]
     
@@ -69,6 +77,12 @@ class DataProcessor:
         if filtered.empty:
             return pd.DataFrame()
         
+        # For normalized format, data is already in Year/Value format
+        if 'Year' in filtered.columns and 'Value' in filtered.columns:
+            result = filtered[['Year', 'Value', 'Unit']].copy() if 'Unit' in filtered.columns else filtered[['Year', 'Value']].copy()
+            return result.sort_values('Year')
+        
+        # For wide format (legacy)
         year_cols = self.get_year_columns()
         row = filtered.iloc[0]
         
@@ -86,11 +100,33 @@ class DataProcessor:
     
     def get_top_producers(self, item: str, year: int, n: int = 10) -> pd.DataFrame:
         """Get top N producers for a specific item and year"""
-        year_col = f'Y{year}'
-        
         filtered = self.filter_data(item=item, element='Production')
         
-        if filtered.empty or year_col not in filtered.columns:
+        if filtered.empty:
+            return pd.DataFrame()
+        
+        # For normalized format
+        if 'Year' in filtered.columns and 'Value' in filtered.columns:
+            year_data = filtered[filtered['Year'] == year].copy()
+            if year_data.empty:
+                return pd.DataFrame()
+            
+            production_data = []
+            for _, row in year_data.iterrows():
+                value = row['Value']
+                if not pd.isna(value) and value > 0:
+                    production_data.append({
+                        'Country': row['Area'],
+                        'Production': value,
+                        'Unit': row.get('Unit', '')
+                    })
+            
+            df = pd.DataFrame(production_data)
+            return df.sort_values('Production', ascending=False).head(n)
+        
+        # For wide format (legacy)
+        year_col = f'Y{year}'
+        if year_col not in filtered.columns:
             return pd.DataFrame()
         
         # Extract production values
