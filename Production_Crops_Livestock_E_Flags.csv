@@ -1,6 +1,3 @@
- Flag, Description
-A,Official figure
-E,Estimated value
-I,Value imputed by a receiving agency
-M,Missing value; data cannot exist
-X,Figure from external organization
+version https://git-lfs.github.com/spec/v1
+oid sha256:ddfc3b5cef4be38a3af0e9dfee1419cd169e510097cdeea4f7150006ae9fcdf8
+size 170
