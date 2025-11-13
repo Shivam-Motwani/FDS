@@ -854,6 +854,14 @@ def render_explorer():
 )
 def update_explorer_table(country, item, element):
     """Update data explorer table"""
+    # Handle None values on initial load
+    if country is None:
+        country = 'all'
+    if item is None:
+        item = 'all'
+    if element is None:
+        element = 'all'
+    
     filtered_df = df_main.copy()
     
     if country != 'all':
