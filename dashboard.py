@@ -21,6 +21,9 @@ app = dash.Dash(
     title="Asia Agriculture Dashboard"
 )
 
+# Expose server for deployment
+server = app.server
+
 # Custom CSS for dark theme dropdowns
 app.index_string = '''
 <!DOCTYPE html>
