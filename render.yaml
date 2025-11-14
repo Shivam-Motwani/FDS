@@ -2,8 +2,12 @@ services:
   - type: web
     name: fds-dashboard
     env: python
+    region: oregon
+    plan: free
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn dashboard:server -b 0.0.0.0:$PORT
+    startCommand: gunicorn dashboard:server --bind 0.0.0.0:$PORT --workers 1 --timeout 120
     envVars:
       - key: PYTHON_VERSION
         value: 3.12.0
+      - key: PORT
+        generateValue: true
