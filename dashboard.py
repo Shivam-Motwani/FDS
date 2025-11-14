@@ -120,10 +120,33 @@ app.index_string = '''
 DATA_DIR = Path(__file__).parent
 
 def load_data():
-    """Load and prepare the dataset"""
-    # Load main data from normalized folder
-    df = pd.read_csv(DATA_DIR / 'Production_Crops_Livestock_E_All_Data_(Normalized)' / 'Production_Crops_Livestock_E_All_Data_(Normalized).csv', 
-                     encoding='latin1', low_memory=False)
+    """Load and prepare the dataset with memory optimization"""
+    import os
+    
+    # Check if running on Render (limited memory)
+    is_production = os.getenv('RENDER') is not None
+    
+    # Optimize dtypes for memory efficiency
+    dtypes = {
+        'Area Code': 'int16',
+        'Item Code': 'int16',
+        'Element Code': 'int16',
+        'Year': 'int16',
+        'Value': 'float32'
+    }
+    
+    csv_path = DATA_DIR / 'Production_Crops_Livestock_E_All_Data_(Normalized)' / 'Production_Crops_Livestock_E_All_Data_(Normalized).csv'
+    
+    if is_production:
+        # On Render: Sample data to reduce memory (every 10th row)
+        print("Production mode: Loading sampled data...")
+        df = pd.read_csv(csv_path, encoding='latin1', dtype=dtypes, 
+                        usecols=['Area', 'Item', 'Element', 'Year', 'Value', 'Unit'],
+                        skiprows=lambda i: i % 10 != 0 and i > 0)
+    else:
+        # Local: Load full dataset
+        print("Loading full dataset...")
+        df = pd.read_csv(csv_path, encoding='latin1', dtype=dtypes, low_memory=False)
     
     # Load lookup tables from normalized folder
     areas = pd.read_csv(DATA_DIR / 'Production_Crops_Livestock_E_All_Data_(Normalized)' / 'Production_Crops_Livestock_E_AreaCodes.csv')
@@ -135,6 +158,12 @@ def load_data():
     items.columns = items.columns.str.strip()
     elements.columns = elements.columns.str.strip()
     
+    # Convert string columns to category dtype for memory efficiency
+    for col in ['Area', 'Item', 'Element', 'Unit']:
+        if col in df.columns:
+            df[col] = df[col].astype('category')
+    
+    print(f"Data loaded: {len(df):,} records")
     return df, areas, items, elements
 
 # Load data

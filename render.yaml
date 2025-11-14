@@ -5,9 +5,11 @@ services:
     region: oregon
     plan: free
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn dashboard:server --bind 0.0.0.0:$PORT --workers 1 --timeout 120
+    startCommand: gunicorn dashboard:server --bind 0.0.0.0:$PORT --workers 1 --timeout 120 --max-requests 1000 --max-requests-jitter 50
     envVars:
       - key: PYTHON_VERSION
         value: 3.12.0
       - key: PORT
         generateValue: true
+      - key: RENDER
+        value: "true"
